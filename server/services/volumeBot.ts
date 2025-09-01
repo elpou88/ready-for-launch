@@ -5,7 +5,6 @@ import {
   Transaction,
   TransactionInstruction,
   SystemProgram,
-  BANNED_SEND_AND_CONFIRM,
   LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import bs58 from 'bs58';
