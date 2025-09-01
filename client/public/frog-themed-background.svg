@@ -1,0 +1,162 @@
+<svg width="600" height="400" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Swamp/pond gradient background -->
+    <radialGradient id="pondBg" cx="50%" cy="70%" r="80%">
+      <stop offset="0%" style="stop-color:#2a5f3f;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#1e4a35;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#16342b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d1f1a;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Water ripple effect -->
+    <radialGradient id="waterRipple" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#4ade80;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#22d3ee;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.1" />
+    </radialGradient>
+    
+    <!-- Lily pad gradient -->
+    <radialGradient id="lilyPad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#4ade80;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Glow effects -->
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="firefly">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Bubble pattern -->
+    <pattern id="bubbles" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="20" r="3" fill="#4ade80" opacity="0.2"/>
+      <circle cx="35" cy="10" r="2" fill="#22d3ee" opacity="0.3"/>
+      <circle cx="25" cy="35" r="4" fill="#0ea5e9" opacity="0.15"/>
+    </pattern>
+  </defs>
+  
+  <!-- Main pond/swamp background -->
+  <rect width="600" height="400" fill="url(#pondBg)"/>
+  
+  <!-- Water surface with subtle ripples -->
+  <ellipse cx="300" cy="350" rx="280" ry="60" fill="#1e4a35" opacity="0.8"/>
+  <ellipse cx="300" cy="345" rx="270" ry="55" fill="url(#waterRipple)"/>
+  <ellipse cx="300" cy="340" rx="260" ry="50" fill="#22d3ee" opacity="0.1"/>
+  
+  <!-- Lily pads scattered around -->
+  <g opacity="0.8">
+    <!-- Large lily pad left -->
+    <g transform="translate(80,300)">
+      <ellipse rx="35" ry="25" fill="url(#lilyPad)" transform="rotate(-15)"/>
+      <path d="M 0,-20 L 5,-15 L 0,-10 Z" fill="#16a34a"/>
+      <!-- Lily flower -->
+      <g transform="translate(0,-8)">
+        <circle r="4" fill="#fbbf24"/>
+        <circle cx="-3" cy="-2" r="2" fill="#fde047" opacity="0.8"/>
+        <circle cx="3" cy="-2" r="2" fill="#fde047" opacity="0.8"/>
+        <circle cx="0" cy="3" r="2" fill="#fde047" opacity="0.8"/>
+      </g>
+    </g>
+    
+    <!-- Medium lily pad right -->
+    <g transform="translate(480,320)">
+      <ellipse rx="28" ry="20" fill="url(#lilyPad)" transform="rotate(20)"/>
+      <path d="M 0,-15 L 4,-12 L 0,-8 Z" fill="#16a34a"/>
+    </g>
+    
+    <!-- Small lily pad top left -->
+    <g transform="translate(150,280)">
+      <ellipse rx="20" ry="15" fill="url(#lilyPad)" transform="rotate(-30)"/>
+      <path d="M 0,-12 L 3,-9 L 0,-6 Z" fill="#16a34a"/>
+    </g>
+    
+    <!-- Small lily pad top right -->
+    <g transform="translate(420,290)">
+      <ellipse rx="18" ry="12" fill="url(#lilyPad)" transform="rotate(45)"/>
+      <path d="M 0,-10 L 2,-8 L 0,-5 Z" fill="#16a34a"/>
+    </g>
+  </g>
+  
+  <!-- Cattails/reeds in background -->
+  <g opacity="0.6">
+    <!-- Left cattails -->
+    <g transform="translate(50,200)">
+      <line x1="0" y1="0" x2="0" y2="100" stroke="#365f35" stroke-width="4"/>
+      <ellipse cx="0" cy="-10" rx="3" ry="12" fill="#8b4513"/>
+      <line x1="10" y1="20" x2="10" y2="120" stroke="#365f35" stroke-width="3"/>
+      <ellipse cx="10" cy="10" rx="2" ry="10" fill="#8b4513"/>
+      <line x1="-8" y1="30" x2="-8" y2="110" stroke="#365f35" stroke-width="3"/>
+      <ellipse cx="-8" cy="20" rx="2" ry="8" fill="#8b4513"/>
+    </g>
+    
+    <!-- Right cattails -->
+    <g transform="translate(520,180)">
+      <line x1="0" y1="0" x2="0" y2="120" stroke="#365f35" stroke-width="4"/>
+      <ellipse cx="0" cy="-8" rx="3" ry="14" fill="#8b4513"/>
+      <line x1="12" y1="25" x2="12" y2="125" stroke="#365f35" stroke-width="3"/>
+      <ellipse cx="12" cy="15" rx="2" ry="10" fill="#8b4513"/>
+      <line x1="-10" y1="35" x2="-10" y2="115" stroke="#365f35" stroke-width="3"/>
+    </g>
+  </g>
+  
+  <!-- Floating bubbles -->
+  <rect width="600" height="400" fill="url(#bubbles)" opacity="0.4"/>
+  
+  <!-- Fireflies/glowing particles -->
+  <g opacity="0.7" filter="url(#firefly)">
+    <circle cx="120" cy="150" r="2" fill="#fbbf24"/>
+    <circle cx="450" cy="120" r="1.5" fill="#fde047"/>
+    <circle cx="350" cy="180" r="2.5" fill="#facc15"/>
+    <circle cx="200" cy="100" r="1" fill="#eab308"/>
+    <circle cx="480" cy="200" r="1.8" fill="#f59e0b"/>
+    <circle cx="80" cy="220" r="1.2" fill="#fbbf24"/>
+  </g>
+  
+  <!-- Moonlight reflection -->
+  <g opacity="0.3">
+    <ellipse cx="300" cy="60" rx="40" ry="35" fill="#fef3c7" filter="url(#softGlow)"/>
+    <ellipse cx="300" cy="340" rx="60" ry="20" fill="#fef3c7" opacity="0.2"/>
+  </g>
+  
+  <!-- Mist/fog effect -->
+  <g opacity="0.2">
+    <ellipse cx="150" cy="50" rx="80" ry="20" fill="#f3f4f6"/>
+    <ellipse cx="400" cy="80" rx="100" ry="25" fill="#f3f4f6"/>
+    <ellipse cx="300" cy="120" rx="120" ry="18" fill="#f3f4f6"/>
+  </g>
+  
+  <!-- Trading elements integrated naturally -->
+  <g opacity="0.4">
+    <!-- SOL coins as lily pads with glow -->
+    <g transform="translate(250,200)">
+      <ellipse rx="12" ry="8" fill="#fbbf24" filter="url(#softGlow)"/>
+      <text x="0" y="2" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" fill="#000">S</text>
+    </g>
+    
+    <g transform="translate(380,160)">
+      <ellipse rx="10" ry="6" fill="#fbbf24" filter="url(#softGlow)"/>
+      <text x="0" y="1" text-anchor="middle" font-family="Arial" font-size="6" font-weight="bold" fill="#000">S</text>
+    </g>
+    
+    <g transform="translate(180,180)">
+      <ellipse rx="8" ry="5" fill="#fbbf24" filter="url(#softGlow)"/>
+      <text x="0" y="1" text-anchor="middle" font-family="Arial" font-size="5" font-weight="bold" fill="#000">S</text>
+    </g>
+  </g>
+  
+  <!-- Central platform (like a big lily pad) -->
+  <ellipse cx="300" cy="340" rx="150" ry="30" fill="url(#lilyPad)" opacity="0.6" filter="url(#softGlow)"/>
+  <ellipse cx="300" cy="335" rx="140" ry="25" fill="#22c55e" opacity="0.3"/>
+</svg>
