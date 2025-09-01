@@ -113,7 +113,7 @@ export class TransactionVerifierService {
       return verification;
 
     } catch (error) {
-      console.error(`❌ Transaction verification failed: ${error.message}`);
+      console.error(`❌ Transaction verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       return {
         isValid: false,
@@ -195,7 +195,7 @@ export class TransactionVerifierService {
       return false;
 
     } catch (error) {
-      console.error(`❌ Error verifying DEX program: ${error.message}`);
+      console.error(`❌ Error verifying DEX program: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   }
@@ -248,7 +248,7 @@ export class TransactionVerifierService {
       };
 
     } catch (error) {
-      console.error(`❌ Token mint verification failed: ${error.message}`);
+      console.error(`❌ Token mint verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return {
         isValid: false,
         supply: 0,

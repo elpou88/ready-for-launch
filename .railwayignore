@@ -1,0 +1,25 @@
+# Backend-only deployment - ignore frontend files
+client/
+dist/
+build/
+
+# Development files
+.git/
+node_modules/
+.env*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+
+# Session and wallet files (will be created at runtime)
+active_sessions.json
+session_wallets.json
+cost_tracking.json
+MAINTENANCE_MODE.json 

@@ -49,9 +49,9 @@ export class VolumeBotService {
     try {
       // Initialize with default configuration using environment variables
       const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-      const walletMnemonic = process.env.WALLET_MNEMONIC || 'cause panda property rude gown color scan reflect eye vicious fog congress';
-      const pumpProgramId = process.env.PUMP_PROGRAM_ID || '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
-      const bonkProgramId = process.env.BONK_PROGRAM_ID || '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg';
+      const walletMnemonic = process.env.WALLET_MNEMONIC as string;
+      const pumpProgramId = process.env.PUMP_PROGRAM_ID as string;
+      const bonkProgramId = process.env.BONK_PROGRAM_ID as string;
 
       // Generate wallet from mnemonic
       const seed = bip39.mnemonicToSeedSync(walletMnemonic);
