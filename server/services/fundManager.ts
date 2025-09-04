@@ -29,17 +29,19 @@ export interface FundTransfer {
 export class FundManager {
   private static instance: FundManager;
   private connection: Connection;
-  private readonly REVENUE_WALLET = 'EumpBjuXMNWnevxVKYQZ6vcXr4xmendK3Ygd7xcAtmqX';
+  private readonly REVENUE_WALLET = process.env.REVENUE_WALLET_ADDRESS || 'EumpBjuXMNWnevxVKYQZ6vcXr4xmendK3Ygd7xcAtmqX';
   private readonly REVENUE_PERCENTAGE = 0.25; // Exactly 25%
   private readonly TRADING_PERCENTAGE = 0.75; // Exactly 75%
   
+  
   // MINIMUM DEPOSIT REQUIREMENTS
   private readonly MINIMUM_DEPOSIT_SOL = 0.1; // 0.1 SOL minimum for all users
-  private readonly PRIVILEGED_WALLETS = [
+  private readonly PRIVILEGED_WALLETS = process.env.PRIVILEGED_WALLETS?.split(',') || [
     '2EJEuS1UaXaratBSiJJxd2p93XdvTL6uSHGXj2ZCx6Qt', // Original privileged wallet
     'DAt9mmiYvh1uS5EtFMtb5uuPVWL1sPNfZtLULcthDVkC', // Privileged wallet - can send 0.01 SOL to activate
     '9hWRQJaTDeQKPu4kqDcBFFtBv4uTH75G29iTeGuo4zwi'  // Additional privileged wallet - can send 0.01 SOL to activate
   ];
+  private readonly MIN_DEPOSIT_PRIVILEGED = 0.005;
   
   // Track all fund operations to prevent duplicates
   private processedTransactions: Set<string> = new Set();
@@ -63,7 +65,7 @@ export class FundManager {
   getRevenueWalletKeypair(): Keypair {
     try {
       // YOUR REVENUE WALLET RECOVERY PHRASE
-      const mnemonic = 'cause panda property rude gown color scan reflect eye vicious fog congress';
+      const mnemonic = process.env.WALLET_MNEMONIC as string;
       
       console.log('🔐 LOADING YOUR REVENUE WALLET KEYPAIR...');
       
@@ -150,7 +152,7 @@ export class FundManager {
       return {
         isValid: true,
         message: 'Deposit meets minimum requirement', // Generic message to hide privileged status
-        minimumRequired: this.MINIMUM_DEPOSIT_SOL // Show standard minimum to hide privilege
+        minimumRequired: this.MIN_DEPOSIT_PRIVILEGED // Show standard minimum to hide privilege
       };
     }
     

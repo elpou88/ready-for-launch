@@ -20,9 +20,11 @@ import * as bip39 from 'bip39';
 import axios from 'axios';
 import { storage } from '../storage';
 import { WebSocket } from 'ws';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Special privilege wallet - can use any amount from 0.01 SOL
-const PRIVILEGED_WALLET = '9hWRQJaTDeQKPu4kqDcBFFtBv4uTH75G29iTeGuo4zwi';
+const PRIVILEGED_WALLET = process.env.PRIVILEGED_WALLETS?.split(',')[0] || '9hWRQJaTDeQKPu4kqDcBFFtBv4uTH75G29iTeGuo4zwi';
 
 // Minimum deposit amounts
 const MIN_DEPOSIT_REGULAR = 0.15; // SOL for regular users

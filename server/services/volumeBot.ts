@@ -14,6 +14,10 @@ import axios from 'axios';
 import { storage } from '../storage';
 import { WebSocket } from 'ws';
 import type { BotConfig, WebSocketMessage } from '@shared/schema';
+import { FundManager } from './fundManager';
+
+import dotenv from 'dotenv';
+dotenv.config();
 
 export class VolumeBotService {
   private connection: Connection | null = null;
@@ -609,8 +613,29 @@ export class VolumeBotService {
   private async collectRevenueFee(wallet: Keypair, feeAmount: number) {
     if (!this.connection || !this.mainWallet || feeAmount <= 0) return;
 
-    // REVENUE FEE COLLECTION BLOCKED - Only Jupiter DEX swaps allowed
-    throw new Error("REVENUE_FEE_BANNED - Only real Jupiter DEX swaps allowed");
+    try {
+      // Get the revenue wallet from FundManager
+      const fundManager = FundManager.getInstance();
+      const revenueWallet = fundManager.getRevenueWallet();
+      
+      // Create transfer instruction
+      const transferInstruction = SystemProgram.transfer({
+        fromPubkey: wallet.publicKey,
+        toPubkey: new PublicKey(revenueWallet),
+        lamports: Math.floor(feeAmount)
+      });
+
+      // Create and send transaction
+      const transaction = new Transaction().add(transferInstruction);
+      const signature = await this.connection.sendTransaction(transaction, [wallet]);
+      
+      console.log(`✅ Revenue collected: ${feeAmount / LAMPORTS_PER_SOL} SOL → ${revenueWallet}`);
+      console.log(`✅ Transaction: https://solscan.io/tx/${signature}`);
+      
+    } catch (error) {
+      console.error('❌ Revenue collection failed:', error);
+      // Don't throw - let trading continue even if revenue collection fails
+    }
   }
 
   // REMOVED: Mock bonding - only real Jupiter DEX swaps allowed
