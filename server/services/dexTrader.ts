@@ -66,7 +66,7 @@ export class DexTrader {
   async executeTrade(config: DexTradeConfig, tradeType: 'BUY' | 'SELL'): Promise<TradeResult> {
     try {
       // 🔥 ACTIVE FEATURE: Use transaction-specific wallet for maximum organic volume
-      const tradingWallet = config.useTransactionWallet && config.transactionWallet 
+      let tradingWallet = config.useTransactionWallet && config.transactionWallet 
         ? config.transactionWallet 
         : config.userWallet;
         
