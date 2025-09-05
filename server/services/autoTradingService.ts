@@ -1001,7 +1001,7 @@ export class AutoTradingService {
         }
 
         // 🔥 ACTIVATE FRESH TRANSACTION WALLET FOR MAXIMUM ORGANIC VOLUME
-        const transactionWallet = this.walletManager.generateTransactionWallet(session.sessionId, session.totalTrades + 1, tradeType);
+        const transactionWallet = this.walletManager.createTransactionWallet(session.sessionId, session.totalTrades + 1, tradeType);
         
         console.log(`🌟 FRESH TRANSACTION WALLET ACTIVATED: ${tradeType} #${session.totalTrades + 1}`);
         console.log(`├── Unique Address: ${transactionWallet.publicKey}`);

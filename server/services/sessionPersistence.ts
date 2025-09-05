@@ -12,12 +12,15 @@ export interface PersistentSession {
   initialDeposit: number;
   primaryDex: string;
   isActive: boolean;
+  finalBalance?: number;
   startTime: string;
+  endTime?: string;
+  reason?: string;
   totalTrades: number;
   totalVolume: number;
   lastTradeTime?: string;
   targetDepletion: number; // 75% of initial deposit
-  status: 'monitoring' | 'trading' | 'completed' | 'paused';
+  status: 'monitoring' | 'trading' | 'completed' | 'paused' | 'stopped';
   createdAt: string;
   completedAt?: string;
 }

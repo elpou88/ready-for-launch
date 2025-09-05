@@ -7,7 +7,7 @@ export class RealTransactionExecutor {
 
   constructor() {
     this.connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-    this.walletManager = new WalletManager();
+    this.walletManager = WalletManager.getInstance();
   }
 
   // Execute real Jupiter swap with session wallet
@@ -33,12 +33,21 @@ export class RealTransactionExecutor {
 
       // Get Jupiter quote
       const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=50`;
-      const quoteResponse = await fetch(quoteUrl);
-      const quoteData = await quoteResponse.json();
 
-      if (quoteData.error) {
-        console.error('❌ Jupiter quote error:', quoteData.error);
-        return null;
+      const quoteResponse = await fetch(quoteUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Railway-Solana-Bot/1.0'
+        }
+      });
+      if (!quoteResponse.ok) {
+        console.error('❌ Jupiter API HTTP error:', quoteResponse.status, quoteResponse.statusText);
+        throw new Error(`Jupiter API failed: ${quoteResponse.status}`);
+      }
+      const quoteData = await quoteResponse.json();
+      if (quoteData.error || !quoteData.routePlan) {
+        console.error('❌ Jupiter quote error:', quoteData.error || 'No route found');
+        throw new Error(`Quote failed: ${quoteData.error || 'No routing available'}`);
       }
 
       console.log(`✅ Quote received: ${quoteData.inAmount} → ${quoteData.outAmount}`);

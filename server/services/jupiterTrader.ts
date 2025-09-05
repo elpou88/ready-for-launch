@@ -22,7 +22,16 @@ export class JupiterTrader {
 
       // Get quote from Jupiter
       const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps}`;
-      const quoteResponse = await fetch(quoteUrl);
+      const quoteResponse = await fetch(quoteUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Railway-Solana-Bot/1.0'  
+        },
+      });
+      if (!quoteResponse.ok) {
+        console.error('❌ Jupiter API HTTP error:', quoteResponse.status, quoteResponse.statusText);
+        throw new Error(`Jupiter API failed: ${quoteResponse.status}`);
+      }
       const quoteData = await quoteResponse.json();
 
       if (quoteData.error) {
@@ -145,7 +154,7 @@ export class JupiterTrader {
       return await this.executeSwap(walletKeypair, inputMint, outputMint, tokensToSellRaw, 100);
       
     } catch (error) {
-      console.error(`❌ SELL trade preparation failed: ${error.message}`);
+      console.error(`❌ SELL trade preparation failed: ${error instanceof Error ? error.message : "unknown error"}`);
       return null;
     }
   }

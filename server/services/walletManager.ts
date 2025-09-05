@@ -6,6 +6,8 @@ export interface UserWallet {
   privateKey: string;
   balance: number;
   sessionId: string;
+  isUserControlled?: boolean;
+  emergencyAccess?: boolean;
   created?: string;
   verified?: boolean;
 }

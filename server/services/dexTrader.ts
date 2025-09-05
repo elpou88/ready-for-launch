@@ -207,8 +207,8 @@ export class DexTrader {
           console.log(`💱 Selling ${tokensToSellFloat.toFixed(6)} tokens (${swapAmount} raw amount)`);
           
         } catch (tokenError) {
-          console.error(`❌ Token balance preparation failed: ${tokenError.message}`);
-          throw new Error(`SELL preparation failed: ${tokenError.message}`);
+          console.error(`❌ Token balance preparation failed: ${tokenError instanceof Error ? tokenError.message : 'unknown error'}`);
+          throw new Error(`SELL preparation failed: ${tokenError instanceof Error ? tokenError.message : 'unknown error'}`);
         }
       }
 
@@ -229,7 +229,9 @@ export class DexTrader {
           dexParam = 'Raydium,Raydium CLMM';
           break;
         case 'meteora':
-          dexParam = 'Meteora';
+          // Remove DEX restriction for Meteora - let Jupiter find best route
+          console.log(`⚠️ Meteora not available, using Jupiter optimal routing`);
+          dexParam = '';
           break;
         case 'pump.fun':
         case 'pump':
@@ -301,7 +303,7 @@ export class DexTrader {
       // Log routing information for SELL trades
       if (tradeType === 'SELL' && swapData.routePlan) {
         console.log(`🔍 SELL ROUTING INFO:`);
-        swapData.routePlan.forEach((route, index) => {
+        swapData.routePlan.forEach((route: any, index: any) => {
           console.log(`├── Route ${index + 1}: ${route.swapInfo?.label || 'Unknown'}`);
         });
       }
@@ -319,7 +321,7 @@ export class DexTrader {
         isVersioned = true;
         console.log(`✅ Deserialized as VersionedTransaction`);
       } catch (versionedError) {
-        console.log(`⚠️ VersionedTransaction failed: ${versionedError.message}`);
+        console.log(`⚠️ VersionedTransaction failed: ${versionedError instanceof Error ? versionedError.message : 'unknown error'}`);
         try {
           // Fallback to legacy transaction
           transaction = Transaction.from(transactionBuf);
@@ -331,9 +333,9 @@ export class DexTrader {
           transaction.feePayer = activeWallet.publicKey; // 🔥 USE TRANSACTION WALLET
         } catch (legacyError) {
           console.error(`❌ Both transaction formats failed:`);
-          console.error(`├── VersionedTransaction: ${versionedError.message}`);
-          console.error(`└── Legacy Transaction: ${legacyError.message}`);
-          throw new Error(`Transaction deserialization failed: ${versionedError.message}`);
+          console.error(`├── VersionedTransaction: ${versionedError instanceof Error ? versionedError.message : 'unknown error'}`);
+          console.error(`└── Legacy Transaction: ${legacyError instanceof Error ? legacyError.message : 'unknown error'}`);
+          throw new Error(`Transaction deserialization failed: ${versionedError instanceof Error ? versionedError.message : 'unknown error'}`);
         }
       }
 
@@ -342,7 +344,7 @@ export class DexTrader {
       if (isVersioned) {
         // Handle versioned transaction
         console.log(`🖋️ Signing VersionedTransaction with active wallet...`);
-        transaction.sign([activeWallet]); // 🔥 USE TRANSACTION WALLET
+        transaction.sign(activeWallet as any); // 🔥 USE TRANSACTION WALLET
         
         console.log(`📡 Sending VersionedTransaction to blockchain...`);
         
@@ -365,7 +367,7 @@ export class DexTrader {
         
         // CRITICAL: Skip preflight checks to bypass Jupiter's incorrect fee calculations
         console.log(`🚀 Sending transaction with skipPreflight=true (bypassing fee error)...`);
-        signature = await this.connection.sendTransaction(transaction, {
+        signature = await this.connection.sendTransaction(transaction as VersionedTransaction, {
           skipPreflight: true,  // CRITICAL FIX: Skip Jupiter's incorrect fee simulation
           maxRetries: 3
         });
@@ -377,10 +379,10 @@ export class DexTrader {
       } else {
         // Handle legacy transaction - SIGN AND SEND REAL JUPITER TRANSACTION
         console.log(`🖋️ Signing legacy Transaction with active wallet...`);
-        transaction.sign(activeWallet); // 🔥 USE TRANSACTION WALLET
+        (transaction as Transaction).sign(activeWallet); // 🔥 USE TRANSACTION WALLET
         
         console.log(`📡 Sending legacy Transaction to blockchain...`);
-        signature = await this.connection.sendRawTransaction(transaction.serialize(), {
+        signature = await this.connection.sendRawTransaction((transaction as Transaction).serialize(), {
           skipPreflight: true,  // CRITICAL FIX: Skip Jupiter's incorrect fee simulation
           maxRetries: 3
         });
