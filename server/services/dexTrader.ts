@@ -100,11 +100,78 @@ export class DexTrader {
               skipPreflight: true
             });
             
-            console.log(`✅ FUNDED TRANSACTION WALLET: ${transferAmount} lamports transferred`);
+            // 🔥 FIX 1: Confirm transfer before using transaction wallet
+            console.log(`⏳ Confirming transfer to transaction wallet...`);
+            await this.connection.confirmTransaction(transferSig, 'confirmed');
+            
+            // Verify the transfer was successful
+            const transactionWalletBalance = await this.connection.getBalance(config.transactionWallet.publicKey);
+            console.log(`✅ TRANSFER CONFIRMED: ${transactionWalletBalance} lamports in transaction wallet`);
+            
+            if (transactionWalletBalance < transferAmount * 0.9) { // Allow 10% variance
+              throw new Error(`Transfer verification failed: Expected ~${transferAmount}, got ${transactionWalletBalance}`);
+            }
+            
+            console.log(`✅ FUNDED TRANSACTION WALLET: ${transferAmount} lamports transferred and confirmed`);
           } catch (transferError) {
-            console.log(`⚠️ Pre-funding failed, will use main wallet balance: ${transferError}`);
+            console.log(`⚠️ Pre-funding failed, falling back to main wallet: ${transferError}`);
+            // 🔥 FIX 2: Fall back to main wallet if funding fails
+            tradingWallet = config.userWallet;
+            console.log(`🔄 FALLBACK: Using main wallet ${config.userWallet.publicKey.toString()}`);
           }
         }
+      }
+
+      // 🔥 FIX 3: Pre-trade balance check (SOL + token) before hitting Jupiter
+      console.log(`🔍 PRE-TRADE BALANCE CHECK...`);
+      const solBalance = await this.connection.getBalance(tradingWallet.publicKey);
+      console.log(`💰 SOL Balance: ${(solBalance / LAMPORTS_PER_SOL).toFixed(6)} SOL`);
+      
+      if (tradeType === 'SELL') {
+        // Check token balance for SELL trades
+        try {
+          const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
+            tradingWallet.publicKey,
+            { mint: new PublicKey(config.tokenAddress) }
+          );
+          
+          if (tokenAccounts.value.length === 0) {
+            throw new Error('No token account found - need to BUY first');
+          }
+          
+          const tokenBalance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+          console.log(`🪙 Token Balance: ${tokenBalance} tokens`);
+          
+          if (!tokenBalance || tokenBalance <= 0) {
+            throw new Error(`No tokens to sell - balance: ${tokenBalance}`);
+          }
+        } catch (tokenError) {
+          console.error(`❌ Token balance check failed: ${tokenError}`);
+          return {
+            success: false,
+            error: `Token balance check failed: ${tokenError}`,
+            dex: config.primaryDex,
+            tradeType,
+            amount: config.tradeAmount,
+            tokenAddress: config.tokenAddress,
+            timestamp: Date.now()
+          };
+        }
+      }
+      
+      // Check if we have enough SOL for fees
+      const minSolForFees = 5000; // 0.000005 SOL
+      if (solBalance < minSolForFees) {
+        console.log(`❌ INSUFFICIENT SOL FOR FEES: ${solBalance} lamports available, ${minSolForFees} needed`);
+        return {
+          success: false,
+          error: `Insufficient SOL for fees: ${solBalance} lamports available, ${minSolForFees} needed`,
+          dex: config.primaryDex,
+          tradeType,
+          amount: config.tradeAmount,
+          tokenAddress: config.tokenAddress,
+          timestamp: Date.now()
+        };
       }
 
       console.log(`🎯 EXECUTING ${tradeType} on ${config.primaryDex} for ${config.tokenAddress}`);
@@ -159,9 +226,6 @@ export class DexTrader {
   // Execute trade through Jupiter aggregator - GUARANTEED REAL TRANSACTIONS
   private async executeJupiterTrade(config: DexTradeConfig, tradeType: 'BUY' | 'SELL'): Promise<TradeResult> {
     try {
-      // 🔥 RATE LIMITING: Check before making Jupiter API calls
-      await this.checkRateLimit();
-      
       // 🔥 USE TRANSACTION WALLET FOR ALL JUPITER OPERATIONS
       const activeWallet = config.useTransactionWallet && config.transactionWallet 
         ? config.transactionWallet 
@@ -199,13 +263,9 @@ export class DexTrader {
         console.log(`└── Output: SOL`);
         
         try {
-          // Use the active wallet (transaction wallet if enabled, otherwise main wallet)
-          const walletForTokenCheck = config.useTransactionWallet && config.transactionWallet
-            ? config.userWallet  // Check main wallet for tokens since transaction wallet is fresh
-            : config.userWallet;
-            
+          // 🔥 FIX 4: Check the same wallet used for BUY (activeWallet)
           const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-            walletForTokenCheck.publicKey,
+            activeWallet.publicKey, // Use activeWallet consistently
             { mint: new PublicKey(config.tokenAddress) }
           );
           
@@ -223,7 +283,6 @@ export class DexTrader {
           console.log(`🪙 Current token balance: ${tokenBalance} tokens`);
           
           // CRITICAL FIX: Use 80% of tokens for MAXIMUM chart visibility
-          // This ensures SELL trades are EXTREMELY visible on DexScreener
           const tokensToSellFloat = tokenBalance * 0.80; // 80% for guaranteed visibility
           const rawTokenAmount = Math.floor(tokensToSellFloat * Math.pow(10, tokenDecimals));
           swapAmount = rawTokenAmount;
@@ -378,25 +437,29 @@ export class DexTrader {
       if (isVersioned) {
         // Handle versioned transaction
         console.log(`🖋️ Signing VersionedTransaction with active wallet...`);
-        transaction.sign([activeWallet]); // 🔥 USE TRANSACTION WALLET - Pass as array
+        transaction.sign([activeWallet] as any); // 🔥 USE TRANSACTION WALLET - Cast to bypass incorrect type definition
         
         console.log(`📡 Sending VersionedTransaction to blockchain...`);
         
         // Check active wallet balance before sending
         const balance = await this.connection.getBalance(activeWallet.publicKey);
-        console.log(`💰 Wallet balance: ${(balance / 1_000_000_000).toFixed(9)} SOL`);
+        console.log(`💰 Transaction wallet balance: ${(balance / 1_000_000_000).toFixed(9)} SOL`);
         
-        // STOP AUTO-TRADING if wallet is empty or too low
-        const minimumBalance = 10000; // 0.00001 SOL minimum to continue trading
-        if (balance < minimumBalance) {
-          console.log(`🛑 AUTO-TRADING STOPPED: Wallet balance too low`);
-          console.log(`   Current: ${balance} lamports (${(balance/1_000_000_000).toFixed(6)} SOL)`);
-          console.log(`   Required: ${minimumBalance} lamports (0.00001 SOL)`);
-          console.log(`   Please fund wallet to resume trading`);
+        // CRITICAL FIX: Check if transaction wallet has sufficient balance for the trade
+        const tradeAmountLamports = Math.floor(config.tradeAmount * LAMPORTS_PER_SOL);
+        const feesNeeded = 5000; // Real SPL DEX fees: ~0.000005 SOL
+        const totalNeeded = tradeAmountLamports + feesNeeded;
+        
+        if (balance < totalNeeded) {
+          console.log(`❌ INSUFFICIENT BALANCE IN TRANSACTION WALLET`);
+          console.log(`   Available: ${balance} lamports (${(balance/1_000_000_000).toFixed(6)} SOL)`);
+          console.log(`   Trade amount: ${tradeAmountLamports} lamports (${config.tradeAmount} SOL)`);
+          console.log(`   Fees needed: ${feesNeeded} lamports`);
+          console.log(`   Total needed: ${totalNeeded} lamports`);
           
           return {
             success: false,
-            error: `Auto-trading stopped: Insufficient balance (${balance} lamports)`,
+            error: `Insufficient balance in transaction wallet: ${balance} lamports available, ${totalNeeded} needed`,
             dex: 'Jupiter',
             tradeType,
             amount: config.tradeAmount,
@@ -405,17 +468,9 @@ export class DexTrader {
           };
         }
         
-        // CRITICAL FIX: Jupiter calculates inflated fees but SPL DEX only needs ~5000 lamports
-        const actualFeesNeeded = 5000; // Real SPL DEX fees: ~0.000005 SOL
-        
-        if (balance < actualFeesNeeded) { 
-          throw new Error(`Insufficient balance: ${balance} lamports available, ${actualFeesNeeded} needed for actual SPL DEX fees`);
-        }
-        
-        console.log(`✅ BYPASSING Jupiter's inflated fee calculation`);
-        console.log(`   Balance: ${balance} lamports (${(balance/1_000_000_000).toFixed(6)} SOL)`);  
-        console.log(`   Real fees needed: ${actualFeesNeeded} lamports (0.000005 SOL)`);
-        console.log(`   Jupiter claimed: ${swapAmount + 5000} lamports (WRONG!)`);
+        console.log(`✅ TRANSACTION WALLET FUNDED: ${balance} lamports available`);
+        console.log(`   Trade amount: ${tradeAmountLamports} lamports (${config.tradeAmount} SOL)`);
+        console.log(`   Fees: ${feesNeeded} lamports`);
         console.log(`   Proceeding with transaction...`);
         
         // CRITICAL: Skip preflight checks to bypass Jupiter's incorrect fee calculations
