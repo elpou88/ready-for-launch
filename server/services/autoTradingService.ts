@@ -826,15 +826,40 @@ export class AutoTradingService {
           console.log(`├── Trading (75%): ${tradingPortion.toFixed(6)} SOL`);
           console.log(`└── Total: ${currentBalance.toFixed(6)} SOL`);
           
+          // 🔥 IMMEDIATE REVENUE TRANSFER: Send 25% to revenue wallet
+          try {
+            console.log(`💸 EXECUTING IMMEDIATE REVENUE TRANSFER...`);
+            const userWalletKeypair = this.walletManager.getUserWalletKeypair(sessionId); // Get user's keypair
+            if (!userWalletKeypair) {
+              console.error(`❌ Cannot get user wallet keypair for revenue transfer: ${sessionId}`);
+              throw new Error('User wallet not found for revenue transfer');
+            }
+
+            const fundSplit = await this.fundManager.processFundSplit(
+              sessionId, 
+              userWalletKeypair, 
+              currentBalance,
+              undefined, // transactionId
+              userWallet.publicKey // fundingSource
+            );
+            
+            console.log(`✅ REVENUE TRANSFER SUCCESSFUL:`);
+            console.log(`├── Revenue collected: ${fundSplit.revenueAmount} SOL`);
+            console.log(`├── Trading balance: ${fundSplit.userTradingAmount} SOL`);
+            console.log(`└── Revenue wallet: ${fundSplit.revenueWallet}`);
+            
+          } catch (revenueError) {
+            console.error(`❌ REVENUE TRANSFER FAILED: ${revenueError}`);
+            console.log(`⚠️ Continuing with trading using full balance as fallback`);
+            // Don't throw - continue trading even if revenue transfer fails
+          }
+          
           // Save to persistence IMMEDIATELY
           await this.sessionPersistence.updateSessionStatus(sessionId, 'trading', {
             tradingBalance: tradingPortion,
             initialDeposit: currentBalance,
             revenueCollected: revenuePortion
           });
-          
-          // Process funding through wallet manager
-          const fundingSplit = await this.walletManager.processFunding(sessionId, currentBalance);
           
           // Broadcast FUNDING_DETECTED
           this.broadcastStatus(sessionId, `FUNDING_DETECTED|${currentBalance}|${userWallet.publicKey}|${tradingPortion}`);

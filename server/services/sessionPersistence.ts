@@ -13,6 +13,7 @@ export interface PersistentSession {
   primaryDex: string;
   isActive: boolean;
   finalBalance?: number;
+  revenueCollected?: number;
   startTime: string;
   endTime?: string;
   reason?: string;
