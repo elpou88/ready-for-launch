@@ -28,11 +28,38 @@ export class DexTrader {
   private connection: Connection;
   private tokenValidator: TokenValidator;
   private fundManager: FundManager;
+  private requestTimestamps: number[] = []; // Track request timestamps for rate limiting
+  private readonly RATE_LIMIT = 60; // 60 requests per minute
+  private readonly RATE_WINDOW = 60 * 1000; // 1 minute in milliseconds
 
   constructor() {
     this.connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
     this.tokenValidator = new TokenValidator();
     this.fundManager = FundManager.getInstance(); // Use centralized fund manager
+  }
+
+  // Rate limiting helper
+  private async checkRateLimit(): Promise<void> {
+    const now = Date.now();
+    
+    // Remove timestamps older than 1 minute
+    this.requestTimestamps = this.requestTimestamps.filter(
+      timestamp => now - timestamp < this.RATE_WINDOW
+    );
+    
+    // Check if we're at the rate limit
+    if (this.requestTimestamps.length >= this.RATE_LIMIT) {
+      const oldestRequest = Math.min(...this.requestTimestamps);
+      const waitTime = this.RATE_WINDOW - (now - oldestRequest) + 1000; // Add 1 second buffer
+      
+      console.log(`⏳ RATE LIMIT REACHED: Waiting ${Math.ceil(waitTime / 1000)}s before next request`);
+      console.log(`   Requests in last minute: ${this.requestTimestamps.length}/${this.RATE_LIMIT}`);
+      
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    // Record this request
+    this.requestTimestamps.push(now);
   }
 
   // Execute a trade on the correct DEX for the validated token
@@ -132,6 +159,9 @@ export class DexTrader {
   // Execute trade through Jupiter aggregator - GUARANTEED REAL TRANSACTIONS
   private async executeJupiterTrade(config: DexTradeConfig, tradeType: 'BUY' | 'SELL'): Promise<TradeResult> {
     try {
+      // 🔥 RATE LIMITING: Check before making Jupiter API calls
+      await this.checkRateLimit();
+      
       // 🔥 USE TRANSACTION WALLET FOR ALL JUPITER OPERATIONS
       const activeWallet = config.useTransactionWallet && config.transactionWallet 
         ? config.transactionWallet 
@@ -277,6 +307,10 @@ export class DexTrader {
 
       // Get swap transaction from Jupiter
       console.log(`⚡ Preparing swap transaction...`);
+      
+      // 🔥 RATE LIMITING: Check before second Jupiter API call
+      await this.checkRateLimit();
+      
       const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -349,8 +383,27 @@ export class DexTrader {
         console.log(`📡 Sending VersionedTransaction to blockchain...`);
         
         // Check active wallet balance before sending
-        const balance = await this.connection.getBalance(activeWallet.publicKey); // 🔥 USE TRANSACTION WALLET
+        const balance = await this.connection.getBalance(activeWallet.publicKey);
         console.log(`💰 Wallet balance: ${(balance / 1_000_000_000).toFixed(9)} SOL`);
+        
+        // STOP AUTO-TRADING if wallet is empty or too low
+        const minimumBalance = 10000; // 0.00001 SOL minimum to continue trading
+        if (balance < minimumBalance) {
+          console.log(`🛑 AUTO-TRADING STOPPED: Wallet balance too low`);
+          console.log(`   Current: ${balance} lamports (${(balance/1_000_000_000).toFixed(6)} SOL)`);
+          console.log(`   Required: ${minimumBalance} lamports (0.00001 SOL)`);
+          console.log(`   Please fund wallet to resume trading`);
+          
+          return {
+            success: false,
+            error: `Auto-trading stopped: Insufficient balance (${balance} lamports)`,
+            dex: 'Jupiter',
+            tradeType,
+            amount: config.tradeAmount,
+            tokenAddress: config.tokenAddress,
+            timestamp: Date.now()
+          };
+        }
         
         // CRITICAL FIX: Jupiter calculates inflated fees but SPL DEX only needs ~5000 lamports
         const actualFeesNeeded = 5000; // Real SPL DEX fees: ~0.000005 SOL
