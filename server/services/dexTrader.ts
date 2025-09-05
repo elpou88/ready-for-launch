@@ -344,7 +344,7 @@ export class DexTrader {
       if (isVersioned) {
         // Handle versioned transaction
         console.log(`🖋️ Signing VersionedTransaction with active wallet...`);
-        transaction.sign(activeWallet as any); // 🔥 USE TRANSACTION WALLET
+        transaction.sign([activeWallet]); // 🔥 USE TRANSACTION WALLET - Pass as array
         
         console.log(`📡 Sending VersionedTransaction to blockchain...`);
         
